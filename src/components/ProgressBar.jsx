@@ -1,13 +1,35 @@
 import React from 'react';
 
-const ProgressBar = ({ total, completed }) => {
+const ProgressBar = ({ total, completed, onClear }) => {
     const percentage = total === 0 ? 0 : Math.round((completed / total) * 100);
 
     return (
         <div className="glass-panel" style={{ padding: '1.5rem', marginBottom: '2rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
                 <span style={{ color: 'var(--text-main)', fontWeight: 600 }}>Overall Progress</span>
-                <span className="neon-text" style={{ color: 'var(--accent-cyan)', fontWeight: 700 }}>{percentage}%</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <span className="neon-text" style={{ color: 'var(--accent-cyan)', fontWeight: 700 }}>{percentage}%</span>
+                    {onClear && (
+                        <button
+                            onClick={onClear}
+                            title="Clear all checklist progress and notes"
+                            style={{
+                                padding: '4px 10px',
+                                background: 'transparent',
+                                border: '1px solid rgba(239, 68, 68, 0.4)',
+                                color: '#ef4444',
+                                borderRadius: '4px',
+                                fontSize: '0.75rem',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s',
+                            }}
+                            onMouseOver={e => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'; }}
+                            onMouseOut={e => { e.currentTarget.style.background = 'transparent'; }}
+                        >
+                            Clear Checklist
+                        </button>
+                    )}
+                </div>
             </div>
 
             <div style={{

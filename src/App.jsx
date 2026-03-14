@@ -7,6 +7,8 @@ import ProtectedRoute from './components/Auth/ProtectedRoute';
 import SecurityChecklist from './components/Dashboard/SecurityChecklist';
 import './App.css';
 
+import ForgotPassword from './components/Auth/ForgotPassword';
+
 function App() {
   return (
     <AuthProvider>
@@ -14,7 +16,7 @@ function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/forgot-password" element={<Login />} /> {/* Placeholder */}
+          <Route path="/forgot-password" element={<ForgotPassword />} />
 
           <Route
             path="/"

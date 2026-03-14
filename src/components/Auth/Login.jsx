@@ -52,7 +52,7 @@ const Login = () => {
                 boxShadow: '0 0 40px rgba(0,0,0,0.5)'
             }}>
 
-                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '2rem', animation: 'float 6s ease-in-out infinite' }}>
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '2rem', animation: 'float 6s ease-in-out infinite', filter: 'brightness(1.5) contrast(1.2)' }}>
                     <DesicrewLogo size="large" />
                 </div>
 
@@ -86,10 +86,12 @@ const Login = () => {
                         <div style={{ position: 'relative' }}>
                             <Mail size={18} style={{ position: 'absolute', left: '12px', top: '12px', color: 'var(--primary)' }} />
                             <input
-                                type="text" // Change to email in prod
+                                type="email"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 placeholder="admin@desicrew.in"
+                                required
+                                autoComplete="email"
                                 style={{
                                     width: '100%',
                                     padding: '10px 10px 10px 40px',
@@ -118,6 +120,8 @@ const Login = () => {
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 placeholder="••••••••"
+                                required
+                                autoComplete="current-password"
                                 style={{
                                     width: '100%',
                                     padding: '10px 40px 10px 40px',
@@ -170,10 +174,6 @@ const Login = () => {
                         {isLoading ? 'Authenticating...' : 'Sign In'}
                     </button>
                 </form>
-
-                <div style={{ marginTop: '2rem', textAlign: 'center', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-                    Don't have an account? <Link to="/register" style={{ color: 'var(--accent-pink)', fontWeight: 500, textDecoration: 'none' }}>Register Access</Link>
-                </div>
             </div>
         </div>
     );

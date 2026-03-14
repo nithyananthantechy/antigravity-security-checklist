@@ -1,5 +1,6 @@
 import React from 'react';
 import { ShieldCheck } from 'lucide-react';
+import DesicrewLogo from './Shared/DesicrewLogo';
 
 const Header = () => {
     const getWeekRange = () => {
@@ -18,19 +19,21 @@ const Header = () => {
             <div style={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                     <div className="float-animation" style={{
-                        background: 'linear-gradient(135deg, var(--primary), var(--accent-cyan))',
-                        padding: '12px',
+                        background: 'rgba(255, 255, 255, 0.9)',
+                        padding: '8px 16px',
                         borderRadius: '12px',
-                        boxShadow: '0 0 20px var(--primary-glow)'
+                        boxShadow: '0 0 20px var(--primary-glow)',
+                        display: 'flex',
+                        alignItems: 'center'
                     }}>
-                        <ShieldCheck size={32} color="white" />
+                        <DesicrewLogo size="medium" />
                     </div>
                     <div>
                         <h1 className="neon-text" style={{ fontSize: '2rem', fontWeight: 700, margin: 0 }}>
-                            ANTIGRAVITY // SECURITY
+                            SECOPS
                         </h1>
                         <p style={{ color: 'var(--text-muted)', margin: 0, marginTop: '4px' }}>
-                            Weekly Security Operations Checklist
+                            Security Operations Checklist
                         </p>
                     </div>
                 </div>

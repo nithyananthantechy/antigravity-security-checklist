@@ -1,12 +1,25 @@
-node_modules/\ndist/\n.env
 # Node
 node_modules/
 server/node_modules/
 
-# Env
+# Build output
+dist/
+
+# Environment — NEVER commit real .env files
 .env
 .env.*
+!.env.example
+!server/.env.example
 
-# Logs
+# Runtime data (generated at runtime, not for repo)
+server/devices.json
+server/history.json
+server/settings.json
+
+# PM2 logs
+logs/
+
+# Misc
 npm-debug.log*
 yarn-debug.log*
+.DS_Store

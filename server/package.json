@@ -15,6 +15,14 @@
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
-    "ssh2": "^1.17.0"
+    "express-rate-limit": "^8.3.1",
+    "helmet": "^8.1.0",
+    "net-snmp": "^3.26.1",
+    "node-cron": "^4.2.1",
+    "node-ssh": "^13.2.1",
+    "nodemailer": "^8.0.2",
+    "ping": "^1.0.0",
+    "ssh2": "^1.17.0",
+    "winrm-client": "^0.0.12"
   }
 }

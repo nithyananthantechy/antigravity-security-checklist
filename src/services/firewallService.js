@@ -2,9 +2,8 @@ export const firewallService = {
     // CONNECT TO REAL BACKEND
     runScan: async (type, credentials) => {
         try {
-            // Dynamically determine the backend URL
-            // If VITE_API_URL is set, use it. Otherwise, assume backend is on port 3001 of the same host.
-            const API_BASE_URL = import.meta.env?.VITE_API_URL || `http://${window.location.hostname}:3001`;
+            // Use relative URL — backend serves both API and frontend on the same port/host in production
+            const API_BASE_URL = import.meta.env?.VITE_API_URL || '';
 
             const response = await fetch(`${API_BASE_URL}/api/scan`, {
                 method: 'POST',

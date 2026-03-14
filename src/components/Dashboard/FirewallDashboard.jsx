@@ -8,6 +8,7 @@ const FirewallDashboard = ({ onDataRetrieved }) => {
     const [isScanning, setIsScanning] = useState(false);
     const [firewallType, setFirewallType] = useState('fortinet');
     const [scanData, setScanData] = useState(null);
+    const [errorMsg, setErrorMsg] = useState(null);
 
     // Credential State
     const [credentials, setCredentials] = useState({
@@ -33,6 +34,7 @@ const FirewallDashboard = ({ onDataRetrieved }) => {
 
     const handleRunScan = async () => {
         setIsScanning(true);
+        setErrorMsg(null);
         try {
             const data = await firewallService.runScan(firewallType, credentials);
             setScanData(data);
@@ -41,6 +43,7 @@ const FirewallDashboard = ({ onDataRetrieved }) => {
             }
         } catch (error) {
             console.error("Scan failed", error);
+            setErrorMsg(error.message || "Failed to connect to device");
         } finally {
             setIsScanning(false);
         }
@@ -221,6 +224,11 @@ const FirewallDashboard = ({ onDataRetrieved }) => {
                     <p style={{ marginTop: '1rem', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
                         {isScanning ? 'Querying Firewall APIs, VMWare vCenter, and WSUS Server...' : 'Ready to scan Network, Patching, and Backup systems.'}
                     </p>
+                    {errorMsg && (
+                        <div style={{ marginTop: '1rem', color: '#ef4444', background: 'rgba(239, 68, 68, 0.1)', padding: '0.75rem', borderRadius: '8px', border: '1px solid #ef4444', display: 'inline-block' }}>
+                            ⚠ Error: {errorMsg}
+                        </div>
+                    )}
                 </div>
             )}
 
