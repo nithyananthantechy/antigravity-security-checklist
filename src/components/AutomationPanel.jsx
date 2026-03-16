@@ -132,9 +132,9 @@ const AutomationPanel = () => {
         fetch(`${API_BASE}/api/devices`)
             .then(r => r.json())
             .then(data => {
-                const linuxDevs = Array.isArray(data) ? data.filter(d => ['linux', 'macos', 'ubuntusrv'].includes(d.type)) : [];
-                setDevices(linuxDevs);
-                if (linuxDevs.length > 0 && !selectedDeviceId) setSelectedDeviceId(linuxDevs[0].id);
+                const availableDevs = Array.isArray(data) ? data.filter(d => ['linux', 'macos', 'ubuntusrv', 'snmp', 'fortinet', 'paloalto'].includes(d.type)) : [];
+                setDevices(availableDevs);
+                if (availableDevs.length > 0 && !selectedDeviceId) setSelectedDeviceId(availableDevs[0].id);
             }).catch(() => {});
     }, []);
 
