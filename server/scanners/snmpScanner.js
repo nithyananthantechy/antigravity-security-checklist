@@ -71,12 +71,6 @@ async function scan(device) {
         if (desc.includes('mikrotik')) vendor = 'MikroTik';
         if (desc.includes('paloalto') || desc.includes('pan-os')) vendor = 'Palo Alto';
 
-        return {
-            deviceType: `Network Device (SNMP) — ${vendor}`,
-            uptime: uptimeStr,
-            sysDescription: sysDescr.substring(0, 200),
-            sysName,
-            vendor,
         // Extract Firmware/OS version if available
         let firmware = null;
         if (vendor === 'Fortinet FortiGate') {
