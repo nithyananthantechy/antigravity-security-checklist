@@ -36,7 +36,7 @@ async function scan(device) {
         safe(() => runSSH(cfg, 'uptime -p')),
         safe(() => runSSH(cfg, 'uname -r')),
         safe(() => runSSH(cfg, 'apt list --upgradable 2>/dev/null | grep -c ""')),
-        safe(() => runSSH(cfg, 'grep "Failed password" /var/log/auth.log 2>/dev/null | wc -l')),
+        safe(() => runSSH(cfg, 'cat /var/log/auth.log /var/log/syslog 2>/dev/null | grep -E "Failed password|action=\\"login\\" status=\\"failed\\"" | wc -l')),
         safe(() => runSSH(cfg, 'sudo -n ufw status 2>/dev/null | head -3')),
         safe(() => runSSH(cfg, 'df -h / | tail -1')),
         safe(() => runSSH(cfg, 'ss -tuln 2>/dev/null | grep LISTEN | wc -l')),

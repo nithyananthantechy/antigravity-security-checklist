@@ -75,14 +75,22 @@ const ExportManager = ({ fullChecklist }) => {
 
                 fileContent += 'Timestamp,Device,Type,Status,Failed Logins,Firewall Status,Patch Status,Error\n';
                 filteredHistory.forEach(h => {
+                    const failLogins = h.result?.access?.failedLogins !== undefined ? h.result.access.failedLogins : 'N/A (SNMP)';
+                    
+                    let fwStatus = h.result?.firewall?.status;
+                    if (!fwStatus && h.result?.connectivity) fwStatus = `Connected (${h.result.connectivity.ifCount} ints)`;
+                    if (!fwStatus) fwStatus = 'N/A';
+
+                    const ptStatus = h.result?.patching?.status || (h.result?.firmware ? `Firmware: ${h.result.firmware}` : 'Manual Verification required');
+
                     const row = [
                         new Date(h.timestamp).toLocaleString(),
                         h.deviceName || h.deviceId,
                         h.scanType,
                         h.error ? 'Failed' : 'Success',
-                        h.result?.access?.failedLogins ?? '',
-                        h.result?.firewall?.status ?? '',
-                        h.result?.patching?.status ?? '',
+                        `"${failLogins}"`,
+                        `"${fwStatus}"`,
+                        `"${ptStatus}"`,
                         `"${(h.error || '').replace(/"/g, '""')}"`
                     ].join(',');
                     fileContent += row + '\n';

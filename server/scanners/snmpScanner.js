@@ -16,6 +16,9 @@ const OIDs = {
     ciscoCPU:      '1.3.6.1.4.1.9.2.1.58.0',
     // Host Resources MIB
     hrMemSize:     '1.3.6.1.2.1.25.2.2.0',
+    // Fortinet Enterprise OIDs
+    ftntSessions:  '1.3.6.1.4.1.12356.101.4.1.8.0',
+    ftntVpn:       '1.3.6.1.4.1.12356.101.12.1.1.0',
 };
 
 function snmpGet(session, oids) {
@@ -54,6 +57,9 @@ async function scan(device) {
         const cpuLoad    = data[OIDs.ciscoCPU]    || 'N/A';
         const sysName    = data[OIDs.sysName]     || device.name;
         const memSize    = parseInt(data[OIDs.hrMemSize]) || 0;
+        
+        const ftntSessions = data[OIDs.ftntSessions];
+        const ftntVpn      = data[OIDs.ftntVpn];
 
         // Convert SNMP timeticks to human-readable
         const uptimeTicks = parseInt(sysUptime) || 0;
@@ -84,6 +90,14 @@ async function scan(device) {
             if (poMatch) firmware = `PAN-OS ${poMatch[1]}`;
         }
 
+        let fwDetails = `Interfaces: ${ifCount} | CPU Load: ${cpuLoad}%`;
+        let vpnData = undefined;
+
+        if (vendor === 'Fortinet FortiGate') {
+            if (ftntSessions !== undefined) fwDetails += ` | Active Sessions: ${ftntSessions}`;
+            if (ftntVpn !== undefined) vpnData = { activeTunnels: parseInt(ftntVpn) || 0 };
+        }
+
         return {
             deviceType: `Network Device (SNMP) — ${vendor}`,
             uptime: uptimeStr,
@@ -93,9 +107,9 @@ async function scan(device) {
             firmware, // Now populates the OS/firmware checklist item properly
             firewall: {
                 status: 'Connected via SNMP',
-                details: `Interfaces: ${ifCount} | CPU Load: ${cpuLoad}%`,
-                // We removed openPorts: 0 to avoid false positives!
+                details: fwDetails,
             },
+            ...(vpnData && { vpn: vpnData }),
             resources: {
                 diskUsedPercent: 'N/A',
                 memTotal: Math.round(memSize / 1024),

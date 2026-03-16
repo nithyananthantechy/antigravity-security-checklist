@@ -104,10 +104,17 @@ function buildChecklist(scanResults) {
                 enriched.notes += `${src} Status: ${result.firewall.status} | ${result.firewall.details || ''} | Open Ports: ${result.firewall.openPorts ?? 'N/A'}\n`;
                 enriched.sources.push(device.name);
             }
-            if (task.autoFill === 'access' && result.access) {
-                enriched.completed = true;
-                enriched.notes += `${src} Failed Logins: ${result.access.failedLogins || 0} | ${result.access.recentLogins || ''}\n`;
-                enriched.sources.push(device.name);
+            if (task.autoFill === 'access') {
+                if (result.access) {
+                    enriched.completed = true;
+                    enriched.notes += `${src} Failed Logins: ${result.access.failedLogins || 0} | ${result.access.recentLogins || ''}\n`;
+                    if (!enriched.sources.includes(device.name)) enriched.sources.push(device.name);
+                }
+                if (result.vpn) {
+                    enriched.completed = true;
+                    enriched.notes += `${src} VPN Tunnels Active: ${result.vpn.activeTunnels || 0}\n`;
+                    if (!enriched.sources.includes(device.name)) enriched.sources.push(device.name);
+                }
             }
             if (task.autoFill === 'patching' && result.patching) {
                 enriched.completed = true;
