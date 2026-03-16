@@ -95,7 +95,7 @@ mkdir -p ~/antigravity-security-checklist/logs
 
 ```bash
 cd ~/antigravity-security-checklist
-pm2 start ecosystem.config.js
+pm2 start ecosystem.config.cjs
 
 # Save PM2 process list (auto-start on reboot)
 pm2 save

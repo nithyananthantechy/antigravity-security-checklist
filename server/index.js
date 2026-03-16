@@ -495,12 +495,22 @@ function getNextCronTime(freq) {
         const daysUntilMon = (8 - now.getDay()) % 7 || 7;
         next.setDate(now.getDate() + daysUntilMon); next.setHours(8, 0, 0, 0);
     } else return null;
-    return next.toLocaleString('en-IN');
+    return next.toISOString();
 }
 
 app.get('/api/settings', (req, res) => {
     const s = loadSettings();
-    res.json({ ...s, nextScanAt: getNextCronTime(s.autoScanSchedule) });
+    const devices = loadDevices();
+    const lastScanAt = devices.reduce((latest, d) => {
+        if (!d.lastScanAt) return latest;
+        return !latest || d.lastScanAt > latest ? d.lastScanAt : latest;
+    }, null);
+    
+    res.json({ 
+        ...s, 
+        nextScanAt: getNextCronTime(s.autoScanSchedule),
+        lastScanAt: lastScanAt ? new Date(lastScanAt).toLocaleString('en-IN') : null
+    });
 });
 
 app.post('/api/settings', (req, res) => {

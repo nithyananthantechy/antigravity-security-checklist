@@ -56,6 +56,7 @@ const SecurityChecklist = () => {
     // Settings
     const [scannerSchedule, setScannerSchedule] = useState('off');
     const [nextScanAt, setNextScanAt] = useState(null);
+    const [lastScanTime, setLastScanTime] = useState(null);
     const [autoEmailEnabled, setAutoEmailEnabled] = useState(false);
 
     const autoRefreshRef = useRef(null);
@@ -102,6 +103,7 @@ const SecurityChecklist = () => {
         fetch(`${API_BASE}/api/settings`).then(r => r.json()).then(d => {
             setScannerSchedule(d.autoScanSchedule || 'off');
             setNextScanAt(d.nextScanAt || null);
+            setLastScanTime(d.lastScanAt || null);
             setAutoEmailEnabled(d.autoEmail === true);
         }).catch(() => {});
         const startInterval = () => {
@@ -263,7 +265,12 @@ const SecurityChecklist = () => {
                         </label>
                         {scannerSchedule !== 'off' && nextScanAt && (
                             <div style={{ fontSize: '0.7rem', color: '#10b981', background: 'rgba(16,185,129,0.1)', padding: '6px', borderRadius: '4px', border: '1px solid rgba(16,185,129,0.2)' }}>
-                                ⏱️ Next: {nextScanAt}
+                                ⏱️ Next: {new Date(nextScanAt).toLocaleString()}
+                            </div>
+                        )}
+                        {lastScanTime && (
+                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', background: 'rgba(255,255,255,0.03)', padding: '6px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.08)', marginTop: '6px' }}>
+                                ✓ Last: {lastScanTime}
                             </div>
                         )}
                     </div>
