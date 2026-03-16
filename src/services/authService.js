@@ -9,6 +9,18 @@ const TOKEN_KEY = 'antigravity_token';
 
 // Hash password using Web Crypto API (SHA-256)
 async function hashPassword(password) {
+    if (!crypto.subtle || !crypto.subtle.digest) {
+        // Fallback for non-secure contexts (HTTP) where Web Crypto API is unavailable
+        let hash = 0;
+        const str = password + 'secops_salt_v1';
+        for (let i = 0; i < str.length; i++) {
+            const char = str.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash;
+        }
+        return Math.abs(hash).toString(16).padStart(64, '0');
+    }
+
     const encoder = new TextEncoder();
     const data = encoder.encode(password + 'secops_salt_v1'); // salted
     const hashBuffer = await crypto.subtle.digest('SHA-256', data);
