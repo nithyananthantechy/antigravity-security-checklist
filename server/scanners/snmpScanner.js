@@ -77,20 +77,31 @@ async function scan(device) {
             sysDescription: sysDescr.substring(0, 200),
             sysName,
             vendor,
+        // Extract Firmware/OS version if available
+        let firmware = null;
+        if (vendor === 'Fortinet FortiGate') {
+            const fwMatch = desc.match(/v(\d+\.\d+\.\d+)/);
+            if (fwMatch) firmware = `FortiOS v${fwMatch[1]}`;
+        } else if (vendor === 'Cisco') {
+            const mMatch = sysDescr.match(/(Version|Software)\s+([^,]+)/i);
+            if (mMatch) firmware = mMatch[2].trim();
+        } else if (vendor === 'Palo Alto') {
+            const poMatch = sysDescr.match(/pan-os\s*(\d+\.\d+\.\d+)/i);
+            if (poMatch) firmware = `PAN-OS ${poMatch[1]}`;
+        }
+
+        return {
+            deviceType: `Network Device (SNMP) — ${vendor}`,
+            uptime: uptimeStr,
+            sysDescription: sysDescr.substring(0, 200),
+            sysName,
+            vendor,
+            firmware, // Now populates the OS/firmware checklist item properly
             firewall: {
                 status: 'Connected via SNMP',
                 details: `Interfaces: ${ifCount} | CPU Load: ${cpuLoad}%`,
-                openPorts: 0,
+                // We removed openPorts: 0 to avoid false positives!
             },
-            access: {
-                failedLogins: 0,
-                recentLogins: 'Not available via SNMP',
-            },
-            patching: {
-                status: 'Manual verification required',
-                pendingUpdates: 0,
-            },
-            backup: { status: 'Manual verification required', lastBackup: 'N/A' },
             resources: {
                 diskUsedPercent: 'N/A',
                 memTotal: Math.round(memSize / 1024),
