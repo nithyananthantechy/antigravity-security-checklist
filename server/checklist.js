@@ -66,7 +66,7 @@ const MASTER_CHECKLIST = [
     // Backup & Recovery
     { id: 46, cat: 'Backup & Recovery',      pri: 'High',   title: 'Verify all scheduled backups completed (100%)',          autoFill: 'backup' },
     { id: 47, cat: 'Backup & Recovery',      pri: 'High',   title: 'Perform random backup restoration test',                 autoFill: null },
-    { id: 48, cat: 'Backup & Recovery',      pri: 'Medium', title: 'Check backup storage capacity and retention policy',     autoFill: 'resources' },
+    { id: 48, cat: 'Backup & Recovery',      pri: 'Medium', title: 'Check backup storage capacity and retention policy',     autoFill: 'backup' },
     { id: 49, cat: 'Backup & Recovery',      pri: 'High',   title: 'Review offsite/cloud backup synchronization',            autoFill: null },
     { id: 50, cat: 'Backup & Recovery',      pri: 'Low',    title: 'Test disaster recovery runbook and RTO/RPO targets',     autoFill: null },
 
@@ -104,9 +104,16 @@ function buildChecklist(scanResults) {
                 let fwNote = `${src} Status: ${result.firewall.status} | ${result.firewall.details || ''} | Open Ports: ${result.firewall.openPorts ?? 'N/A'}`;
                 
                 // If this is a log server, append the log findings too
-                if (result.access && (device.name.toLowerCase().includes('log') || result.deviceType.toLowerCase().includes('log'))) {
+                if (result.access && (device.name.toLowerCase().includes('log') || result.deviceType.toLowerCase().includes('log') || device.name.toLowerCase().includes('syslog'))) {
                     const failCount = result.access.failedLogins ?? 0;
-                    fwNote += ` | LOG ANALYSIS: ${failCount > 0 ? `Found ${failCount} failed firewall login events in syslog.` : 'Analyzed syslog - No failed firewall login events found.'}`;
+                    if (failCount > 0) {
+                        fwNote += ` | LOG ANALYSIS: Found ${failCount} security events (Blocks/Denies/Alerts) in syslog.`;
+                        if (result.access.recentLogins) {
+                            fwNote += ` | PROOF: Last 5 logs: ${result.access.recentLogins.substring(0, 150)}...`;
+                        }
+                    } else {
+                        fwNote += ` | LOG ANALYSIS: Analyzed syslog - No security alerts or denied traffic found in current logs.`;
+                    }
                 }
                 
                 enriched.notes += fwNote + '\n';

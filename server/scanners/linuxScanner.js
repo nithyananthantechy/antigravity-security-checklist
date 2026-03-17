@@ -59,7 +59,8 @@ async function scan(device) {
     ]);
 
     const updatesCount = parseInt(updates) || 0;
-    const failedCount = parseInt(failedLogins) || 0;
+    const failedCount = parseInt(failedLogins?.failedLogins) || parseInt(failedLogins) || 0;
+    const syslogLogs = failedLogins?.recentLogins || '';
     const portsCount = parseInt(openPorts) || 0;
     const memParts  = memInfo.split(/\s+/);
     const memTotal  = parseInt(memParts[1]) || 0;
@@ -77,7 +78,7 @@ async function scan(device) {
         },
         access: {
             failedLogins: failedCount,
-            recentLogins: lastLogins,
+            recentLogins: syslogLogs || lastLogins,
         },
         patching: {
             status: updatesCount > 0 ? 'Updates Available' : 'Compliant',
