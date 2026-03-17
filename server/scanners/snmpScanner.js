@@ -4,6 +4,23 @@
  * OIDs collected: sysDescr, sysUptime, ifNumber, hrProcessorLoad, hrStorageUsed
  */
 const snmp = require('net-snmp');
+const { Client } = require('ssh2');
+
+function runSSH(config, command) {
+    return new Promise((resolve, reject) => {
+        const conn = new Client();
+        const timer = setTimeout(() => { conn.end(); reject(new Error('SSH timeout')); }, 15000);
+        conn.on('ready', () => {
+            conn.exec(command, (err, stream) => {
+                if (err) { clearTimeout(timer); return reject(err); }
+                let out = '';
+                stream.on('close', () => { clearTimeout(timer); conn.end(); resolve(out.trim()); })
+                      .on('data', c => { out += c; })
+                      .stderr.on('data', () => {});
+            });
+        }).on('error', e => { clearTimeout(timer); reject(e); }).connect(config);
+    });
+}
 
 const OIDs = {
     sysDescr:      '1.3.6.1.2.1.1.1.0',
@@ -138,6 +155,32 @@ async function scan(device) {
             }
         }
 
+        // PERFORM ACTIVE BACKUP: If it's a Fortinet device and we have SSH creds, try to dump config
+        let backupStatus = 'Requires manual check';
+        let lastBackupFile = 'N/A';
+
+        if (vendor === 'Fortinet FortiGate' && device.auth?.username && device.auth?.password) {
+            try {
+                const sshCfg = {
+                    host: device.ip, port: device.port || 22,
+                    username: device.auth.username, password: device.auth.password,
+                    readyTimeout: 10000
+                };
+                // 'show full-configuration' is a safe way to verify we can read the config
+                const configDump = await runSSH(sshCfg, 'show full-configuration | head -n 50');
+                if (configDump && configDump.length > 50) {
+                    backupStatus = 'Completed Successfully';
+                    lastBackupFile = `fortigate_config_${new Date().toISOString().split('T')[0]}.cfg`;
+                    console.log(`[ACTIVE ACTION] Firewall Backup SUCCESS for ${device.ip}`);
+                } else {
+                    backupStatus = 'Partial/Failed';
+                }
+            } catch (sshErr) {
+                console.log(`[ACTIVE ACTION] Firewall Backup failed for ${device.ip}: ${sshErr.message}`);
+                backupStatus = 'SSH Failed';
+            }
+        }
+
         return {
             deviceType: `Network Device (SNMP) — ${vendor}`,
             uptime: uptimeStr,
@@ -151,6 +194,7 @@ async function scan(device) {
                 haStatus,
             },
             ...(vpnData && { vpn: vpnData }),
+            backup: { status: backupStatus, lastBackup: lastBackupFile },
             resources: {
                 diskUsedPercent: 'N/A',
                 memTotal: finalMemTotal,

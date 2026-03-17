@@ -137,8 +137,12 @@ function buildChecklist(scanResults) {
                 if (!enriched.sources.includes(device.name)) enriched.sources.push(device.name);
             }
             if (task.autoFill === 'backup' && result.backup) {
-                enriched.completed = true;
-                enriched.notes += `${src} ${result.backup.status} | Last: ${result.backup.lastBackup}\n`;
+                enriched.completed = result.backup.status?.includes('Successfully');
+                let backupNote = `${src} Active Action Review: ${result.backup.status}`;
+                if (result.backup.lastBackup && result.backup.lastBackup !== 'N/A') {
+                    backupNote += ` | File/Result: ${result.backup.lastBackup}`;
+                }
+                enriched.notes += backupNote + '\n';
                 if (!enriched.sources.includes(device.name)) enriched.sources.push(device.name);
             }
             if (task.autoFill === 'resources' && result.resources) {

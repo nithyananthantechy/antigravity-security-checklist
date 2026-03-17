@@ -32,7 +32,7 @@ async function scan(device) {
     };
 
     // Run all checks in parallel
-    const [uptime, kernelVer, updates, failedLogins, ufwStatus, diskUsage, openPorts, lastLogins, cpuLoad, memInfo] = await Promise.all([
+    const [uptime, kernelVer, updates, failedLogins, ufwStatus, diskUsage, openPorts, lastLogins, cpuLoad, memInfo, backupResults] = await Promise.all([
         safe(() => runSSH(cfg, 'uptime -p')),
         safe(() => runSSH(cfg, 'uname -r')),
         safe(() => runSSH(cfg, 'apt list --upgradable 2>/dev/null | grep -c ""')),
@@ -56,7 +56,19 @@ async function scan(device) {
         safe(() => runSSH(cfg, 'last -n 5 2>/dev/null | head -5')),
         safe(() => runSSH(cfg, 'cat /proc/loadavg 2>/dev/null')),
         safe(() => runSSH(cfg, 'free -m 2>/dev/null | grep Mem')),
+        safe(async () => {
+            // PERFORM ACTIVE BACKUP: Backup /etc and home configs
+            const backupDir = '/var/backups/secops_app';
+            const backupFile = `config_backup_${new Date().toISOString().split('T')[0]}.tar.gz`;
+            const cmd = `echo "${device.auth.password}" | sudo -S mkdir -p ${backupDir} && echo "${device.auth.password}" | sudo -S tar -czf ${backupDir}/${backupFile} /etc /usr/local/etc 2>/dev/null && echo "SUCCESS: ${backupFile}"`;
+            const result = await runSSH(cfg, cmd);
+            console.log(`[ACTIVE ACTION] Backup result for ${device.ip}: ${result}`);
+            return result;
+        }),
     ]);
+
+    const backupStatus = backupResults?.includes('SUCCESS') ? 'Completed Successfully' : 'Failed or Not Configured';
+    const lastBackupFile = backupResults?.split('SUCCESS: ')[1] || 'N/A';
 
     const updatesCount = parseInt(updates) || 0;
     const failedCount = parseInt(failedLogins?.failedLogins) || parseInt(failedLogins) || 0;
@@ -84,7 +96,7 @@ async function scan(device) {
             status: updatesCount > 0 ? 'Updates Available' : 'Compliant',
             pendingUpdates: updatesCount,
         },
-        backup: { status: 'Requires manual check', lastBackup: 'N/A' },
+        backup: { status: backupStatus, lastBackup: lastBackupFile },
         resources: {
             diskUsedPercent: diskPct,
             memTotal, memUsed,
