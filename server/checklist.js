@@ -101,7 +101,14 @@ function buildChecklist(scanResults) {
 
             if (task.autoFill === 'firewall' && result.firewall) {
                 enriched.completed = true;
-                enriched.notes += `${src} Status: ${result.firewall.status} | ${result.firewall.details || ''} | Open Ports: ${result.firewall.openPorts ?? 'N/A'}\n`;
+                let fwNote = `${src} Status: ${result.firewall.status} | ${result.firewall.details || ''} | Open Ports: ${result.firewall.openPorts ?? 'N/A'}`;
+                
+                // If this is a log server, append the log findings too
+                if (result.access && result.access.failedLogins > 0) {
+                    fwNote += ` | LOG ANALYSIS: Found ${result.access.failedLogins} failed firewall login events in syslog.`;
+                }
+                
+                enriched.notes += fwNote + '\n';
                 enriched.sources.push(device.name);
             }
             if (task.autoFill === 'access') {

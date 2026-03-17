@@ -71,7 +71,9 @@ async function scan(device) {
         let vendor = 'Unknown';
         const desc = sysDescr.toLowerCase();
         if (desc.includes('cisco'))   vendor = 'Cisco';
-        if (desc.includes('fortinet') || desc.includes('fortigate')) vendor = 'Fortinet FortiGate';
+        if (desc.includes('fortinet') || desc.includes('fortigate') || desc.includes('fortios') || desc.includes('forti')) {
+            vendor = 'Fortinet FortiGate';
+        }
         if (desc.includes('juniper')) vendor = 'Juniper';
         if (desc.includes('aruba'))   vendor = 'Aruba';
         if (desc.includes('mikrotik')) vendor = 'MikroTik';
