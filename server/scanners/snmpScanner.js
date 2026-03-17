@@ -20,6 +20,8 @@ const OIDs = {
     ftntSessions:  '1.3.6.1.4.1.12356.101.4.1.8.0',
     ftntVpn:       '1.3.6.1.4.1.12356.101.12.1.1.0',
     ftntSysVersion: '1.3.6.1.4.1.12356.101.4.1.1.0',
+    ftntCpu:       '1.3.6.1.4.1.12356.101.4.1.3.0',
+    ftntMem:       '1.3.6.1.4.1.12356.101.4.1.4.0',
 };
 
 function snmpGet(session, oids) {
@@ -62,6 +64,8 @@ async function scan(device) {
         const ftntSessions = data[OIDs.ftntSessions];
         const ftntVpn      = data[OIDs.ftntVpn];
         const ftntVer      = data[OIDs.ftntSysVersion];
+        const ftntCpu      = data[OIDs.ftntCpu];
+        const ftntMem      = data[OIDs.ftntMem];
 
         // LOG FOR DEBUGGING - This helps us see what the device is actually saying
         console.log(`[SNMP DEBUG] ${device.ip} sysDescr: ${sysDescr.substring(0, 100)}`);
@@ -78,7 +82,7 @@ async function scan(device) {
         if (desc.includes('cisco'))   vendor = 'Cisco';
         
         // Robust Fortinet Detection
-        if (ftntVer || desc.includes('fortinet') || desc.includes('fortigate') || desc.includes('fortios') || desc.includes('forti')) {
+        if (ftntVer || desc.includes('fortinet') || desc.includes('fortigate') || desc.includes('fortios') || desc.includes('forti') || desc.includes('fg ')) {
             vendor = 'Fortinet FortiGate';
         }
 
@@ -110,6 +114,18 @@ async function scan(device) {
             if (ftntVpn !== undefined) vpnData = { activeTunnels: parseInt(ftntVpn) || 0 };
         }
 
+        let finalCpu = cpuLoad !== 'N/A' ? `${cpuLoad}%` : 'N/A';
+        let finalMemTotal = Math.round(memSize / 1024);
+        let finalMemUsed = 'N/A';
+
+        if (vendor === 'Fortinet FortiGate' || device.name.toLowerCase().includes('firewall')) {
+            if (ftntCpu !== undefined) finalCpu = `${ftntCpu}%`;
+            if (ftntMem !== undefined) {
+                // Fortinet Mem OID usually returns percentage
+                finalMemUsed = `${ftntMem}%`;
+            }
+        }
+
         return {
             deviceType: `Network Device (SNMP) — ${vendor}`,
             uptime: uptimeStr,
@@ -124,8 +140,9 @@ async function scan(device) {
             ...(vpnData && { vpn: vpnData }),
             resources: {
                 diskUsedPercent: 'N/A',
-                memTotal: Math.round(memSize / 1024),
-                cpuLoad: cpuLoad !== 'N/A' ? `${cpuLoad}%` : 'N/A',
+                memTotal: finalMemTotal,
+                memUsed: finalMemUsed,
+                cpuLoad: finalCpu,
             },
             connectivity: {
                 ifCount,
