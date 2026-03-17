@@ -19,6 +19,7 @@ const OIDs = {
     // Fortinet Enterprise OIDs
     ftntSessions:  '1.3.6.1.4.1.12356.101.4.1.8.0',
     ftntVpn:       '1.3.6.1.4.1.12356.101.12.1.1.0',
+    ftntSysVersion: '1.3.6.1.4.1.12356.101.4.1.1.0',
 };
 
 function snmpGet(session, oids) {
@@ -60,6 +61,10 @@ async function scan(device) {
         
         const ftntSessions = data[OIDs.ftntSessions];
         const ftntVpn      = data[OIDs.ftntVpn];
+        const ftntVer      = data[OIDs.ftntSysVersion];
+
+        // LOG FOR DEBUGGING - This helps us see what the device is actually saying
+        console.log(`[SNMP DEBUG] ${device.ip} sysDescr: ${sysDescr.substring(0, 100)}`);
 
         // Convert SNMP timeticks to human-readable
         const uptimeTicks = parseInt(sysUptime) || 0;
@@ -67,21 +72,24 @@ async function scan(device) {
         const uptimeHours = Math.floor((uptimeTicks % 8640000) / 360000);
         const uptimeStr   = `${uptimeDays}d ${uptimeHours}h`;
 
-        // Determine vendor from sysDescr
+        // Determine vendor from sysDescr OR enterprise OIDs
         let vendor = 'Unknown';
         const desc = sysDescr.toLowerCase();
         if (desc.includes('cisco'))   vendor = 'Cisco';
-        if (desc.includes('fortinet') || desc.includes('fortigate') || desc.includes('fortios') || desc.includes('forti')) {
+        
+        // Robust Fortinet Detection
+        if (ftntVer || desc.includes('fortinet') || desc.includes('fortigate') || desc.includes('fortios') || desc.includes('forti')) {
             vendor = 'Fortinet FortiGate';
         }
+
         if (desc.includes('juniper')) vendor = 'Juniper';
         if (desc.includes('aruba'))   vendor = 'Aruba';
         if (desc.includes('mikrotik')) vendor = 'MikroTik';
         if (desc.includes('paloalto') || desc.includes('pan-os')) vendor = 'Palo Alto';
 
         // Extract Firmware/OS version if available
-        let firmware = null;
-        if (vendor === 'Fortinet FortiGate') {
+        let firmware = ftntVer ? `FortiOS ${ftntVer}` : null;
+        if (vendor === 'Fortinet FortiGate' && !firmware) {
             const fwMatch = desc.match(/v(\d+\.\d+\.\d+)/);
             if (fwMatch) firmware = `FortiOS v${fwMatch[1]}`;
         } else if (vendor === 'Cisco') {
@@ -95,7 +103,9 @@ async function scan(device) {
         let fwDetails = `Interfaces: ${ifCount} | CPU Load: ${cpuLoad}%`;
         let vpnData = undefined;
 
-        if (vendor === 'Fortinet FortiGate') {
+        // Try to fetch Fortinet data if vendor is Fortinet OR if name looks like a firewall
+        if (vendor === 'Fortinet FortiGate' || device.name.toLowerCase().includes('firewall')) {
+            if (vendor === 'Unknown') vendor = 'Fortinet (Assumed)';
             if (ftntSessions !== undefined) fwDetails += ` | Active Sessions: ${ftntSessions}`;
             if (ftntVpn !== undefined) vpnData = { activeTunnels: parseInt(ftntVpn) || 0 };
         }

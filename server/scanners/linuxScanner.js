@@ -36,7 +36,12 @@ async function scan(device) {
         safe(() => runSSH(cfg, 'uptime -p')),
         safe(() => runSSH(cfg, 'uname -r')),
         safe(() => runSSH(cfg, 'apt list --upgradable 2>/dev/null | grep -c ""')),
-        safe(() => runSSH(cfg, `echo "${device.auth.password}" | sudo -S cat /var/log/syslog /var/log/auth.log 2>/dev/null | grep -E "Failed password|action=\\"login\\" status=\\"failed\\"" | wc -l`)),
+        safe(async () => {
+            const cmd = `echo "${device.auth.password}" | sudo -S cat /var/log/syslog /var/log/auth.log 2>/dev/null | grep -E "Failed password|action=\\"login\\" status=\\"failed\\"" | wc -l`;
+            const count = await runSSH(cfg, cmd);
+            console.log(`[SYSLOG DEBUG] ${device.ip} failed login count: ${count}`);
+            return count;
+        }),
         safe(() => runSSH(cfg, 'sudo -n ufw status 2>/dev/null | head -3')),
         safe(() => runSSH(cfg, 'df -h / | tail -1')),
         safe(() => runSSH(cfg, 'ss -tuln 2>/dev/null | grep LISTEN | wc -l')),

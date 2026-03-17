@@ -104,12 +104,13 @@ function buildChecklist(scanResults) {
                 let fwNote = `${src} Status: ${result.firewall.status} | ${result.firewall.details || ''} | Open Ports: ${result.firewall.openPorts ?? 'N/A'}`;
                 
                 // If this is a log server, append the log findings too
-                if (result.access && result.access.failedLogins > 0) {
-                    fwNote += ` | LOG ANALYSIS: Found ${result.access.failedLogins} failed firewall login events in syslog.`;
+                if (result.access && (device.name.toLowerCase().includes('log') || result.deviceType.toLowerCase().includes('log'))) {
+                    const failCount = result.access.failedLogins ?? 0;
+                    fwNote += ` | LOG ANALYSIS: ${failCount > 0 ? `Found ${failCount} failed firewall login events in syslog.` : 'Analyzed syslog - No failed firewall login events found.'}`;
                 }
                 
                 enriched.notes += fwNote + '\n';
-                enriched.sources.push(device.name);
+                if (!enriched.sources.includes(device.name)) enriched.sources.push(device.name);
             }
             if (task.autoFill === 'access') {
                 if (result.access) {
@@ -126,36 +127,36 @@ function buildChecklist(scanResults) {
             if (task.autoFill === 'patching' && result.patching) {
                 enriched.completed = true;
                 enriched.notes += `${src} ${result.patching.status} — ${result.patching.pendingUpdates ?? 0} updates pending\n`;
-                enriched.sources.push(device.name);
+                if (!enriched.sources.includes(device.name)) enriched.sources.push(device.name);
             }
             if (task.autoFill === 'backup' && result.backup) {
                 enriched.completed = true;
                 enriched.notes += `${src} ${result.backup.status} | Last: ${result.backup.lastBackup}\n`;
-                enriched.sources.push(device.name);
+                if (!enriched.sources.includes(device.name)) enriched.sources.push(device.name);
             }
             if (task.autoFill === 'resources' && result.resources) {
                 enriched.completed = true;
                 const r = result.resources;
                 enriched.notes += `${src} Disk: ${r.diskUsedPercent}% | RAM: ${r.memUsed ?? 'N/A'}/${r.memTotal ?? 'N/A'} MB | CPU: ${r.loadAvg || r.cpuLoad || 'N/A'}\n`;
-                enriched.sources.push(device.name);
+                if (!enriched.sources.includes(device.name)) enriched.sources.push(device.name);
             }
             if (task.autoFill === 'wan' && result.wan) {
                 enriched.completed = result.wan.reachable;
                 enriched.notes += `${src} ${result.wan.quality} | Latency: ${result.wan.avgLatencyMs ?? 'N/A'}ms | Loss: ${result.wan.packetLoss ?? 'N/A'}%\n`;
-                enriched.sources.push(device.name);
+                if (!enriched.sources.includes(device.name)) enriched.sources.push(device.name);
             }
             if (task.autoFill === 'connectivity' && result.connectivity) {
                 enriched.completed = true;
-                enriched.notes += `${src} Vendor: ${result.connectivity.vendor} | Interfaces: ${result.connectivity.ifCount}\n`;
-                enriched.sources.push(device.name);
+                enriched.notes += `${src} Vendor: ${result.connectivity.vendor || 'Unknown'} | Interfaces: ${result.connectivity.ifCount}\n`;
+                if (!enriched.sources.includes(device.name)) enriched.sources.push(device.name);
             }
             if (task.autoFill === 'osInfo') {
                 const osNotes = result.kernelVersion ? `Kernel: ${result.kernelVersion}` :
-                                result.firmware ? `Firmware: ${result.firmware}` : null;
+                                (result.firmware || result.vendor?.includes('Assumed')) ? `Firmware: ${result.firmware || 'Generic SNMP'}` : null;
                 if (osNotes) {
                     enriched.completed = true;
                     enriched.notes += `${src} ${osNotes}\n`;
-                    enriched.sources.push(device.name);
+                    if (!enriched.sources.includes(device.name)) enriched.sources.push(device.name);
                 }
             }
         }
