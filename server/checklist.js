@@ -7,7 +7,7 @@ const MASTER_CHECKLIST = [
     // Network Security
     { id: 1,  cat: 'Network Security',       pri: 'High',   title: 'Review firewall logs for suspicious activity',           autoFill: 'firewall' },
     { id: 2,  cat: 'Network Security',       pri: 'High',   title: 'Check VPN connection logs and failed authentications',   autoFill: 'access' },
-    { id: 3,  cat: 'Network Security',       pri: 'Medium', title: 'Verify IDS/IPS alerts and update signature rules',       autoFill: null },
+    { id: 3,  cat: 'Network Security',       pri: 'Medium', title: 'Verify IDS/IPS alerts and update signature rules',       autoFill: 'ids' },
     { id: 4,  cat: 'Network Security',       pri: 'Low',    title: 'Review bandwidth usage for anomalies',                   autoFill: 'wan' },
     { id: 5,  cat: 'Network Security',       pri: 'Medium', title: 'Test network segmentation effectiveness',                autoFill: null },
     { id: 6,  cat: 'Network Security',       pri: 'High',   title: 'Verify SNMP community strings are not default (public)', autoFill: null },
@@ -44,7 +44,7 @@ const MASTER_CHECKLIST = [
     // Firewall & Perimeter
     { id: 30, cat: 'Firewall & Perimeter',   pri: 'High',   title: 'Review and audit firewall rule set / ACLs',              autoFill: 'firewall' },
     { id: 31, cat: 'Firewall & Perimeter',   pri: 'High',   title: 'Verify firewall firmware is up to date',                 autoFill: 'osInfo' },
-    { id: 32, cat: 'Firewall & Perimeter',   pri: 'High',   title: 'Check firewall HA / failover status',                    autoFill: 'firewall' },
+    { id: 32, cat: 'Firewall & Perimeter',   pri: 'High',   title: 'Check firewall HA / failover status',                    autoFill: 'ha' },
     { id: 33, cat: 'Firewall & Perimeter',   pri: 'Medium', title: 'Review inbound/outbound allow rules for overpermission',autoFill: null },
     { id: 34, cat: 'Firewall & Perimeter',   pri: 'High',   title: 'Confirm management access is not exposed to internet',   autoFill: null },
     { id: 35, cat: 'Firewall & Perimeter',   pri: 'Low',    title: 'Archive firewall config backup this week',               autoFill: null },
@@ -71,7 +71,7 @@ const MASTER_CHECKLIST = [
     { id: 50, cat: 'Backup & Recovery',      pri: 'Low',    title: 'Test disaster recovery runbook and RTO/RPO targets',     autoFill: null },
 
     // Compliance & Monitoring
-    { id: 51, cat: 'Compliance',             pri: 'High',   title: 'Review SIEM alerts and security incidents',              autoFill: null },
+    { id: 51, cat: 'Compliance',             pri: 'High',   title: 'Review SIEM alerts and security incidents',              autoFill: 'ids' },
     { id: 52, cat: 'Compliance',             pri: 'Medium', title: 'Check compliance dashboard (GDPR/ISO 27001/SOC2)',        autoFill: null },
     { id: 53, cat: 'Compliance',             pri: 'Medium', title: 'Review data access audit trails and FIM alerts',         autoFill: null },
     { id: 54, cat: 'Compliance',             pri: 'High',   title: 'Audit privileged access to sensitive data systems',      autoFill: null },
@@ -147,7 +147,22 @@ function buildChecklist(scanResults) {
             }
             if (task.autoFill === 'connectivity' && result.connectivity) {
                 enriched.completed = true;
-                enriched.notes += `${src} Vendor: ${result.connectivity.vendor || 'Unknown'} | Interfaces: ${result.connectivity.ifCount}\n`;
+                let connNote = `${src} Vendor: ${result.connectivity.vendor || 'Unknown'} | Interfaces: ${result.connectivity.ifCount}`;
+                if (result.connectivity.inboundErrors !== undefined) {
+                    connNote += ` | Errors: In=${result.connectivity.inboundErrors}, Out=${result.connectivity.outboundErrors}`;
+                }
+                enriched.notes += connNote + '\n';
+                if (!enriched.sources.includes(device.name)) enriched.sources.push(device.name);
+            }
+            if (task.autoFill === 'ha' && result.firewall?.haStatus) {
+                enriched.completed = true;
+                enriched.notes += `${src} HA Status: ${result.firewall.haStatus}\n`;
+                if (!enriched.sources.includes(device.name)) enriched.sources.push(device.name);
+            }
+            if (task.autoFill === 'ids' && result.access) {
+                enriched.completed = true;
+                const alertCount = result.access.failedLogins || 0;
+                enriched.notes += `${src} Security Events Detected: ${alertCount} | Log Samples: ${result.access.recentLogins || 'None'}\n`;
                 if (!enriched.sources.includes(device.name)) enriched.sources.push(device.name);
             }
             if (task.autoFill === 'osInfo') {

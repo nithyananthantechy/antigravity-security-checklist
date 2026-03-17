@@ -22,6 +22,10 @@ const OIDs = {
     ftntSysVersion: '1.3.6.1.4.1.12356.101.4.1.1.0',
     ftntCpu:       '1.3.6.1.4.1.12356.101.4.1.3.0',
     ftntMem:       '1.3.6.1.4.1.12356.101.4.1.4.0',
+    ftntHA:        '1.3.6.1.4.1.12356.101.6.1.1.0',
+    // Generic Interface Errors (index 1 as a sample)
+    ifInErrors:    '1.3.6.1.2.1.2.2.1.14.1',
+    ifOutErrors:   '1.3.6.1.2.1.2.2.1.20.1',
 };
 
 function snmpGet(session, oids) {
@@ -66,6 +70,9 @@ async function scan(device) {
         const ftntVer      = data[OIDs.ftntSysVersion];
         const ftntCpu      = data[OIDs.ftntCpu];
         const ftntMem      = data[OIDs.ftntMem];
+        const ftntHA       = data[OIDs.ftntHA];
+        const ifInErrors   = data[OIDs.ifInErrors];
+        const ifOutErrors  = data[OIDs.ifOutErrors];
 
         // LOG FOR DEBUGGING - This helps us see what the device is actually saying
         console.log(`[SNMP DEBUG] ${device.ip} sysDescr: ${sysDescr.substring(0, 100)}`);
@@ -106,12 +113,17 @@ async function scan(device) {
 
         let fwDetails = `Interfaces: ${ifCount} | CPU Load: ${cpuLoad}%`;
         let vpnData = undefined;
+        let haStatus = 'Standalone/N/A';
 
         // Try to fetch Fortinet data if vendor is Fortinet OR if name looks like a firewall
         if (vendor === 'Fortinet FortiGate' || device.name.toLowerCase().includes('firewall')) {
             if (vendor === 'Unknown') vendor = 'Fortinet (Assumed)';
             if (ftntSessions !== undefined) fwDetails += ` | Active Sessions: ${ftntSessions}`;
             if (ftntVpn !== undefined) vpnData = { activeTunnels: parseInt(ftntVpn) || 0 };
+            if (ftntHA !== undefined) {
+                const haMembers = parseInt(ftntHA) || 0;
+                haStatus = haMembers > 1 ? `HA Cluster (${haMembers} nodes)` : 'Standalone';
+            }
         }
 
         let finalCpu = cpuLoad !== 'N/A' ? `${cpuLoad}%` : 'N/A';
@@ -136,6 +148,7 @@ async function scan(device) {
             firewall: {
                 status: 'Connected via SNMP',
                 details: fwDetails,
+                haStatus,
             },
             ...(vpnData && { vpn: vpnData }),
             resources: {
@@ -146,6 +159,9 @@ async function scan(device) {
             },
             connectivity: {
                 ifCount,
+                inboundErrors: parseInt(ifInErrors) || 0,
+                outboundErrors: parseInt(ifOutErrors) || 0,
+                status: 'Healthy',
                 vendor,
                 sysDescr,
             }

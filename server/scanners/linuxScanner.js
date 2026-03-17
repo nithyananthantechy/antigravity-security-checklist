@@ -37,10 +37,18 @@ async function scan(device) {
         safe(() => runSSH(cfg, 'uname -r')),
         safe(() => runSSH(cfg, 'apt list --upgradable 2>/dev/null | grep -c ""')),
         safe(async () => {
-            const cmd = `echo "${device.auth.password}" | sudo -S cat /var/log/syslog /var/log/auth.log 2>/dev/null | grep -E "Failed password|action=\\"login\\" status=\\"failed\\"" | wc -l`;
+            const cmd = `echo "${device.auth.password}" | sudo -S cat /var/log/syslog /var/log/auth.log 2>/dev/null | grep -E "Failed password|action=\\"login\\" status=\\"failed\\"|SEC_LOGIN-4-LOGIN_FAILED|action=\\"deny\\"|action=\\"block\\"|level=\\"alert\\"|%IDS-4-SIG_EVT|%SYS-5-CONFIG_I" | wc -l`;
             const count = await runSSH(cfg, cmd);
-            console.log(`[SYSLOG DEBUG] ${device.ip} failed login count: ${count}`);
-            return count;
+            console.log(`[SYSLOG DEBUG] ${device.ip} security events count: ${count}`);
+            
+            // Also get a sample of recent security-related logs
+            const sampleCmd = `echo "${device.auth.password}" | sudo -S grep -E "action=\\"deny\\"|action=\\"block\\"|alert|IDS|SEC_LOGIN|threat" /var/log/syslog /var/log/auth.log 2>/dev/null | tail -n 5`;
+            const samples = await runSSH(cfg, sampleCmd);
+            
+            return {
+                failedLogins: parseInt(count) || 0,
+                recentLogins: samples // Reuse this field or add a new one
+            };
         }),
         safe(() => runSSH(cfg, 'sudo -n ufw status 2>/dev/null | head -3')),
         safe(() => runSSH(cfg, 'df -h / | tail -1')),

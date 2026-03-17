@@ -73,15 +73,23 @@ const ExportManager = ({ fullChecklist }) => {
                     return true;
                 });
 
-                fileContent += 'Timestamp,Device,Type,Status,Failed Logins,Firewall Status,Patch Status,Error\n';
+                fileContent += 'Timestamp,Device,Type,Status,Security Events (Logs),Firewall/HA Status,System/Link Health,Error\n';
                 filteredHistory.forEach(h => {
                     const failLogins = h.result?.access?.failedLogins !== undefined ? h.result.access.failedLogins : 'N/A (SNMP)';
                     
                     let fwStatus = h.result?.firewall?.status;
+                    if (h.result?.firewall?.haStatus) fwStatus += ` (${h.result.firewall.haStatus})`;
                     if (!fwStatus && h.result?.connectivity) fwStatus = `Connected (${h.result.connectivity.ifCount} ints)`;
                     if (!fwStatus) fwStatus = 'N/A';
 
-                    const ptStatus = h.result?.patching?.status || (h.result?.firmware ? `Firmware: ${h.result.firmware}` : 'Manual Verification required');
+                    let healthStatus = h.result?.patching?.status;
+                    if (!healthStatus && h.result?.connectivity) {
+                        const inErr = h.result.connectivity.inboundErrors || 0;
+                        const outErr = h.result.connectivity.outboundErrors || 0;
+                        healthStatus = `Link: ${inErr + outErr > 0 ? 'Errors detected' : 'Healthy'} (In=${inErr}, Out=${outErr})`;
+                    }
+                    if (h.result?.firmware) healthStatus = `${h.result.firmware} | ${healthStatus || ''}`;
+                    if (!healthStatus) healthStatus = 'Manual Verification required';
 
                     const row = [
                         new Date(h.timestamp).toLocaleString(),
@@ -90,7 +98,7 @@ const ExportManager = ({ fullChecklist }) => {
                         h.error ? 'Failed' : 'Success',
                         `"${failLogins}"`,
                         `"${fwStatus}"`,
-                        `"${ptStatus}"`,
+                        `"${healthStatus}"`,
                         `"${(h.error || '').replace(/"/g, '""')}"`
                     ].join(',');
                     fileContent += row + '\n';
